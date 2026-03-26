@@ -1,19 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
-import { Plus, ListTodo, CheckCircle2, Circle, Trash2, Filter } from 'lucide-react'
+import { Plus, ListTodo, CheckCircle2, Circle, Trash2, Filter, Loader2, RefreshCw } from 'lucide-react'
+
+const API_URL = 'http://localhost:8000'
 
 function App() {
-  const [tasks, setTasks] = useState([
-    { id: 1, title: 'Design System Implementation', description: 'Apply ApexPy visual identity.', status: true },
-    { id: 2, title: 'Setup Backend Integration', description: 'Connect with FastAPI endpoints.', status: false }
-  ])
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [newTask, setNewTask] = useState({ title: '', description: '' })
-  const [filter, setFilter] = useState('all') // all, pending, completed
+  const [filter, setFilter] = useState('all')
   
   const containerRef = useRef(null)
-  const listRef = useRef(null)
+
+  const fetchTasks = async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch(`${API_URL}/items/`)
+      const data = await res.json()
+      setTasks(data || [])
+    } catch (err) {
+      console.error('Failed to fetch tasks:', err)
+    } finally {
+      setLoading(false)
+      setSyncing(false)
+    }
+  }
 
   useEffect(() => {
+    fetchTasks()
+    
     const ctx = gsap.context(() => {
       gsap.from('.stagger-in', {
         y: 20,
@@ -26,41 +42,75 @@ function App() {
     return () => ctx.revert()
   }, [])
 
-  const addTask = () => {
+  const addTask = async () => {
     if (!newTask.title.trim()) return
-    const item = {
-      id: Date.now(),
-      title: newTask.title,
-      description: newTask.description,
-      status: false
-    }
-    setTasks([item, ...tasks])
-    setNewTask({ title: '', description: '' })
-    
-    // Animate new item
-    setTimeout(() => {
-      gsap.from(`.task-${item.id}`, {
-        x: -20,
-        opacity: 0,
-        duration: 0.5,
-        ease: 'back.out(1.7)'
+    setSyncing(true)
+    try {
+      const res = await fetch(`${API_URL}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newTask, id: null, status: false })
       })
-    }, 0)
+      const data = await res.json()
+      
+      // The API returns { details, id, description, status } but needs title
+      // Based on API docs, let's assume it worked and refresh or manually add
+      setTasks([{ 
+        id: data.id, 
+        title: newTask.title, 
+        description: data.description, 
+        status: data.status 
+      }, ...tasks])
+      
+      setNewTask({ title: '', description: '' })
+      
+      setTimeout(() => {
+        gsap.from(`.task-${data.id}`, {
+          x: -20,
+          opacity: 0,
+          duration: 0.5,
+          ease: 'back.out(1.7)'
+        })
+      }, 0)
+    } catch (err) {
+      console.error('Add failed:', err)
+    } finally {
+      setSyncing(false)
+    }
   }
 
-  const toggleTask = (id) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, status: !t.status } : t))
+  const toggleTask = async (task) => {
+    setSyncing(true)
+    const updatedStatus = !task.status
+    try {
+      await fetch(`${API_URL}/items/${task.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...task, status: updatedStatus })
+      })
+      setTasks(tasks.map(t => t.id === task.id ? { ...t, status: updatedStatus } : t))
+    } catch (err) {
+      console.error('Update failed:', err)
+    } finally {
+      setSyncing(false)
+    }
   }
 
-  const deleteTask = (id) => {
-    gsap.to(`.task-${id}`, {
-      x: 50,
-      opacity: 0,
-      duration: 0.3,
-      onComplete: () => {
-        setTasks(tasks.filter(t => t.id !== id))
-      }
-    })
+  const deleteTask = async (id) => {
+    setSyncing(true)
+    try {
+      await fetch(`${API_URL}/items/${id}`, { method: 'DELETE' })
+      gsap.to(`.task-${id}`, {
+        x: 50, opacity: 0, duration: 0.3,
+        onComplete: () => {
+          setTasks(tasks.filter(t => t.id !== id))
+        }
+      })
+    } catch (err) {
+      console.error('Delete failed:', err)
+    } finally {
+      setSyncing(false)
+    }
   }
 
   const filteredTasks = tasks.filter(t => {
@@ -69,12 +119,21 @@ function App() {
     return true
   })
 
+  if (loading) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
+      <Loader2 size={48} className="animate-spin" />
+    </div>
+  )
+
   return (
     <div ref={containerRef} className="container">
       <header className="stagger-in">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-          <ListTodo size={32} color="#3b82f6" />
-          <h1 style={{ margin: 0 }}>ApexPy Tasks</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <ListTodo size={32} color="#3b82f6" />
+            <h1 style={{ margin: 0 }}>ApexPy Tasks</h1>
+          </div>
+          {syncing && <RefreshCw size={18} className="animate-spin" color="var(--primary)" />}
         </div>
         <p style={{ color: 'var(--text-muted)' }}>Premium To-Do Management Interface</p>
       </header>
@@ -97,8 +156,8 @@ function App() {
                 value={newTask.description}
                 onChange={(e) => setNewTask({...newTask, description: e.target.value})}
               />
-              <button className="btn btn-primary" onClick={addTask} disabled={!newTask.title}>
-                <Plus size={20} style={{ marginRight: '8px' }} />
+              <button className="btn btn-primary" onClick={addTask} disabled={!newTask.title || syncing}>
+                {syncing ? <Loader2 size={18} className="animate-spin" /> : <Plus size={20} style={{ marginRight: '8px' }} />}
                 Add
               </button>
             </div>
@@ -108,7 +167,6 @@ function App() {
         <section className="stagger-in">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <Filter size={18} color="var(--text-muted)" />
               <h3 style={{ margin: 0 }}>Your Tasks</h3>
             </div>
             <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-card)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border)' }}>
@@ -118,8 +176,7 @@ function App() {
                   onClick={() => setFilter(f)}
                   className="btn"
                   style={{ 
-                    padding: '4px 12px', 
-                    fontSize: '0.8rem', 
+                    padding: '4px 12px', fontSize: '0.8rem', 
                     background: filter === f ? 'var(--primary)' : 'transparent',
                     color: filter === f ? 'white' : 'var(--text-muted)',
                     borderRadius: '6px'
@@ -131,19 +188,14 @@ function App() {
             </div>
           </div>
           
-          <div ref={listRef} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {filteredTasks.map(task => (
               <div 
                 key={task.id} 
                 className={`card task-item task-${task.id}`} 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '1rem', 
-                  opacity: task.status ? 0.6 : 1,
-                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '1rem', opacity: task.status ? 0.6 : 1 }}
               >
-                <div onClick={() => toggleTask(task.id)} style={{ cursor: 'pointer' }}>
+                <div onClick={() => toggleTask(task)} style={{ cursor: 'pointer' }}>
                   {task.status ? <CheckCircle2 size={24} color="var(--secondary)" /> : <Circle size={24} color="var(--border)" />}
                 </div>
                 <div style={{ flex: 1 }}>
@@ -152,15 +204,16 @@ function App() {
                 </div>
                 <button 
                   onClick={() => deleteTask(task.id)} 
+                  disabled={syncing}
                   style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }}
                 >
                   <Trash2 size={18} />
                 </button>
               </div>
             ))}
-            {filteredTasks.length === 0 && (
+            {!loading && filteredTasks.length === 0 && (
               <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
-                <p>No tasks found in this category.</p>
+                <p>No tasks found.</p>
               </div>
             )}
           </div>
@@ -170,6 +223,11 @@ function App() {
       <footer className="stagger-in" style={{ marginTop: '4rem', opacity: 0.5, fontSize: '0.8rem' }}>
         <p>© 2026 ApexPy Design. Built for Leonardo de Almeida.</p>
       </footer>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin { animation: spin 1s linear infinite; }
+      `}} />
     </div>
   )
 }
