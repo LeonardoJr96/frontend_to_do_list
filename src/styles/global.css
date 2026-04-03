@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-devops-bg: #0f172a;
+  --color-devops-card: #1e293b;
+  --color-devops-primary: #6366f1;
+  --color-devops-success: #22c55e;
+  --color-devops-danger: #ef4444;
+  
+  --background-image-glass-gradient: linear-gradient(to bottom right, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+}
+
+@layer base {
+  body {
+    @apply bg-devops-bg text-slate-200 antialiased overflow-x-hidden;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-[image:var(--background-image-glass-gradient)] backdrop-blur-md border border-slate-700/50 shadow-xl rounded-2xl;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-devops-primary/90 hover:bg-devops-primary text-white font-medium rounded-lg shadow-[0_0_15px_rgba(99,102,241,0.5)] transition-all duration-300;
+  }
+
+  .btn-danger {
+    @apply px-4 py-2 bg-devops-danger/80 hover:bg-devops-danger text-white font-medium rounded-lg shadow-[0_0_10px_rgba(239,68,68,0.3)] transition-all duration-300;
+  }
+
+  .btn-success {
+    @apply px-4 py-2 bg-devops-success/80 hover:bg-devops-success text-white font-medium rounded-lg shadow-[0_0_10px_rgba(34,197,94,0.3)] transition-all duration-300;
+  }
+  
+  .input-field {
+    @apply w-full bg-slate-900/50 border border-slate-700 outline-none focus:border-devops-primary focus:ring-1 focus:ring-devops-primary rounded-lg px-4 py-2 text-slate-100 placeholder-slate-500 transition-all;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a; 
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6366f1; 
+}

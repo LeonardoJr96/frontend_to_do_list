@@ -1,83 +1,73 @@
-# ApexPy Tasks – React To-Do List
+# React + TypeScript + Vite
 
-Projeto `frontend_to_do_list` é uma aplicação SPA em React (Vite) para gerenciar tarefas com sincronização via API REST.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Visão Geral
+Currently, two official plugins are available:
 
-- Frontend: React, Vite, GSAP, lucide-react.
-- API: http://localhost:8000 (baseURL configurável em `API_URL`).
-- Funcionalidades: listar, criar, atualizar status, filtrar, deletar tarefas.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Funcionalidades
+## React Compiler
 
-1. Criar tarefa com título e descrição opcional.
-2. Marcar como concluída/pendente (toggle status).
-3. Deletar tarefa com animação GSAP.
-4. Filtro por all/pending/completed.
-5. Loading e sync indicator.
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Tecnologias
+## Expanding the ESLint configuration
 
-- React 18
-- Vite
-- GSAP
-- lucide-react
-- Fetch API
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-## Estrutura
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-- `src/App.jsx`: lógica UI e API
-- `src/main.jsx`: mount React
-- `src/index.css`: estilos globais
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-## Requisitos
-
-- Node.js 18+
-- npm/yarn
-- Backend rodando em `http://localhost:8000`
-
-## Instalação
-
-```bash
-npm install
-npm run dev
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-## API Endpoints (backend esperados)
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-- GET `/items/` – lista tarefas
-- POST `/` – cria tarefa: `{ title, description, status, id }`
-- PUT `/items/:id` – atualiza tarefa (status)
-- DELETE `/items/:id` – remove tarefa
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-## Como usar
-
-1. Acesse `http://localhost:5173`
-2. Adicione título e descrição.
-3. Clique `Add` para criar.
-4. Clique no ícone para marcar concluída.
-5. Clique lixeira para deletar.
-6. Alterne filtro para ver pendentes/concluídas.
-
-## Desenvolvimento
-
-- `npm run dev`: servidor de desenvolvimento.
-- `npm run build`: build de produção.
-- `npm run preview`: pré-visualizar build.
-
-## Próximos passos sugeridos
-
-- Melhorar tratamento de erros de rede com alertas visuais.
-- Suporte a edição inline de tarefa.
-- Paginação para grande volume de tarefas.
-- Configuração de backend via variáveis de ambiente.
-
-## Contribuição
-
-1. Fork
-2. Branch `feature/*`
-3. PR com descrição e testes
-
-## Licença
-
-MIT
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
