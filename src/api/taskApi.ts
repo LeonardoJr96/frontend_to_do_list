@@ -33,7 +33,7 @@ export const taskApi = {
   },
   
   createTask: async (task: Omit<Task, 'id'>): Promise<Task> => {
-    const response = await api.post('/items/', task);
+    const response = await api.post('/', task);
     return response.data;
   },
   
