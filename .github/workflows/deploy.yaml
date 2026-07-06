@@ -36,6 +36,7 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/lab-devops-frontend:${{ steps.meta.outputs.image_tag }}
 
   update-gitops:
+      needs: build-and-push
       runs-on: ubuntu-latest
       if: github.event_name == 'push'
       steps:
